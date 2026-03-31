@@ -96,7 +96,7 @@ def relu_backward(dA, z):
     return dA * ((z > 0).astype(float))
 
 # Maybe a bit too complicated...
-# I would choose GELU if I had another choice.
+# I would choose GELU if I had one more chance.
 def swiglu_backward(dA, a_prev, W, V, value, gate, swish):
     d_value = dA * swish
     d_swish = dA * value
