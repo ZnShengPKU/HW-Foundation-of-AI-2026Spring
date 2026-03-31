@@ -6,70 +6,120 @@ import matplotlib.pyplot as plt
 
 def plot_all_results(results_dir='./results'):
     # 获取所有的 csv 文件路径
-    csv_files = glob.glob(os.path.join(results_dir, '*.csv'))
+    all_csv_files = glob.glob(os.path.join(results_dir, '*.csv'))
     
-    if not csv_files:
-        print(f"在 {results_dir} 目录下没有找到 CSV 文件！请先运行训练脚本。")
-        return
-
-    # 初始化 4 张图的 Figure 和 Axes
-    plt.style.use('seaborn-v0_8-whitegrid') # 使用美观的网格样式
+    # 【修改点 1】将 test_acc.csv 从折线图的绘制列表中排除，避免缺少 Epoch 列导致报错
+    train_val_files = [f for f in all_csv_files if not f.endswith('test_acc.csv')]
     
-    fig_train_acc, ax_train_acc = plt.subplots(figsize=(10, 6))
-    fig_train_loss, ax_train_loss = plt.subplots(figsize=(10, 6))
-    fig_val_acc, ax_val_acc = plt.subplots(figsize=(10, 6))
-    fig_val_loss, ax_val_loss = plt.subplots(figsize=(10, 6))
-
-    print(f"找到 {len(csv_files)} 个实验结果，开始绘图...")
-
-    # 遍历每一个 csv 文件
-    for file in sorted(csv_files):
-        # 提取文件名作为图例名称（去掉 .csv 后缀）
-        exp_name = os.path.basename(file).replace('.csv', '')
+    if not train_val_files:
+        print(f"在 {results_dir} 目录下没有找到训练过程的 CSV 文件！")
+    else:
+        # --- 1. 绘制训练和验证过程折线图 ---
+        plt.style.use('seaborn-v0_8-whitegrid') # 使用美观的网格样式
         
-        # 读取数据
-        df = pd.read_csv(file)
-        epochs = df['Epoch']
+        fig_train_acc, ax_train_acc = plt.subplots(figsize=(10, 6))
+        fig_train_loss, ax_train_loss = plt.subplots(figsize=(10, 6))
+        fig_val_acc, ax_val_acc = plt.subplots(figsize=(10, 6))
+        fig_val_loss, ax_val_loss = plt.subplots(figsize=(10, 6))
+
+        print(f"找到 {len(train_val_files)} 个实验过程结果，开始绘制折线图...")
+
+        # 遍历每一个 csv 文件
+        for file in sorted(train_val_files):
+            # 提取文件名作为图例名称（去掉 .csv 后缀）
+            exp_name = os.path.basename(file).replace('.csv', '')
+            
+            # 读取数据
+            df = pd.read_csv(file)
+            epochs = df['Epoch']
+            
+            # 绘制四条曲线，使用自动分配的颜色，并绑定标签
+            ax_train_acc.plot(epochs, df['Train Acc'], marker='o', label=exp_name)
+            ax_train_loss.plot(epochs, df['Train Loss'], marker='o', label=exp_name)
+            ax_val_acc.plot(epochs, df['Val Acc'], marker='o', label=exp_name)
+            ax_val_loss.plot(epochs, df['Val Loss'], marker='o', label=exp_name)
+
+        # 配置 Train Accuracy 图像
+        ax_train_acc.set_title('Training Accuracy', fontsize=16)
+        ax_train_acc.set_xlabel('Epochs', fontsize=12)
+        ax_train_acc.set_ylabel('Accuracy', fontsize=12)
+        ax_train_acc.set_ylim(0.90, 1.00) 
+        ax_train_acc.legend(fontsize=10)
+        fig_train_acc.savefig(os.path.join(results_dir, 'train_acc.png'), dpi=300, bbox_inches='tight')
+
+        # 配置 Train Loss 图像
+        ax_train_loss.set_title('Training Loss', fontsize=16)
+        ax_train_loss.set_xlabel('Epochs', fontsize=12)
+        ax_train_loss.set_ylabel('Loss', fontsize=12)
+        ax_train_loss.set_ylim(0.0, 0.4) 
+        ax_train_loss.legend(fontsize=10)
+        fig_train_loss.savefig(os.path.join(results_dir, 'train_loss.png'), dpi=300, bbox_inches='tight')
+
+        # 配置 Validation Accuracy 图像
+        ax_val_acc.set_title('Validation Accuracy', fontsize=16)
+        ax_val_acc.set_xlabel('Epochs', fontsize=12)
+        ax_val_acc.set_ylabel('Accuracy', fontsize=12)
+        ax_val_acc.set_ylim(0.90, 1.00) 
+        ax_val_acc.legend(fontsize=10)
+        fig_val_acc.savefig(os.path.join(results_dir, 'val_acc.png'), dpi=300, bbox_inches='tight')
+
+        # 配置 Validation Loss 图像
+        ax_val_loss.set_title('Validation Loss', fontsize=16)
+        ax_val_loss.set_xlabel('Epochs', fontsize=12)
+        ax_val_loss.set_ylabel('Loss', fontsize=12)
+        ax_val_loss.set_ylim(0.0, 0.4) 
+        ax_val_loss.legend(fontsize=10)
+        fig_val_loss.savefig(os.path.join(results_dir, 'val_loss.png'), dpi=300, bbox_inches='tight')
         
-        # 绘制四条曲线，使用自动分配的颜色，并绑定标签
-        ax_train_acc.plot(epochs, df['Train Acc'], marker='o', label=exp_name)
-        ax_train_loss.plot(epochs, df['Train Loss'], marker='o', label=exp_name)
-        ax_val_acc.plot(epochs, df['Val Acc'], marker='o', label=exp_name)
-        ax_val_loss.plot(epochs, df['Val Loss'], marker='o', label=exp_name)
+        # 释放内存
+        plt.close(fig_train_acc)
+        plt.close(fig_train_loss)
+        plt.close(fig_val_acc)
+        plt.close(fig_val_loss)
 
-    # --- 配置 Train Accuracy 图像 ---
-    ax_train_acc.set_title('Training Accuracy', fontsize=16)
-    ax_train_acc.set_xlabel('Epochs', fontsize=12)
-    ax_train_acc.set_ylabel('Accuracy', fontsize=12)
-    ax_train_acc.set_ylim(0.90, 1.00) # 按要求限制上下限为 90% - 100%
-    ax_train_acc.legend(fontsize=10)
-    fig_train_acc.savefig(os.path.join(results_dir, 'train_acc.png'), dpi=300, bbox_inches='tight')
+    # --- 【修改点 2】新增：绘制 Test Accuracy 柱状图 ---
+    test_acc_file = os.path.join(results_dir, 'test_acc.csv')
+    
+    if os.path.exists(test_acc_file):
+        print(f"\n找到测试集结果 {test_acc_file}，开始绘制柱状图...")
+        # 读取 CSV，使用 iloc 读取第一列和第二列，避免列名写死导致报错
+        df_test = pd.read_csv(test_acc_file)
+        exp_names = df_test.iloc[:, 0]  # 第一列: Exp Name
+        test_accs = df_test.iloc[:, 1]  # 第二列: Test Acc
 
-    # --- 配置 Train Loss 图像 ---
-    ax_train_loss.set_title('Training Loss', fontsize=16)
-    ax_train_loss.set_xlabel('Epochs', fontsize=12)
-    ax_train_loss.set_ylabel('Loss', fontsize=12)
-    ax_train_loss.set_ylim(0.0, 0.4) # 按要求限制上下限为 0 - 0.4
-    ax_train_loss.legend(fontsize=10)
-    fig_train_loss.savefig(os.path.join(results_dir, 'train_loss.png'), dpi=300, bbox_inches='tight')
+        fig_test, ax_test = plt.subplots(figsize=(10, 6))
+        
+        # 绘制柱状图
+        bars = ax_test.bar(exp_names, test_accs, color='steelblue', width=0.5, edgecolor='black')
 
-    # --- 配置 Validation Accuracy 图像 ---
-    ax_val_acc.set_title('Validation Accuracy', fontsize=16)
-    ax_val_acc.set_xlabel('Epochs', fontsize=12)
-    ax_val_acc.set_ylabel('Accuracy', fontsize=12)
-    ax_val_acc.set_ylim(0.90, 1.00) # 验证集准确率同样限制在 90% - 100%
-    ax_val_acc.legend(fontsize=10)
-    fig_val_acc.savefig(os.path.join(results_dir, 'val_acc.png'), dpi=300, bbox_inches='tight')
+        # 配置图像
+        ax_test.set_title('Test Accuracy per Experiment', fontsize=16)
+        ax_test.set_xlabel('Experiment Name', fontsize=12)
+        ax_test.set_ylabel('Test Accuracy', fontsize=12)
+        
+        # 按要求将范围限制在 95% - 100% (即 0.95 - 1.00)
+        ax_test.set_ylim(0.95, 1.00) 
+        
+        # 如果实验名称较长，x 轴标签倾斜 45 度以免重叠
+        plt.xticks(rotation=45, ha='right')
 
-    # --- 配置 Validation Loss 图像 ---
-    ax_val_loss.set_title('Validation Loss', fontsize=16)
-    ax_val_loss.set_xlabel('Epochs', fontsize=12)
-    ax_val_loss.set_ylabel('Loss', fontsize=12)
-    ax_val_loss.set_ylim(0.0, 0.4) # 验证集 Loss 限制在 0 - 0.4
-    ax_val_loss.legend(fontsize=10)
-    fig_val_loss.savefig(os.path.join(results_dir, 'val_loss.png'), dpi=300, bbox_inches='tight')
+        # 在每个柱子顶部标出具体的准确率数值
+        for bar in bars:
+            yval = bar.get_height()
+            # 在柱子正上方偏移 0.001 的位置写文字
+            ax_test.text(bar.get_x() + bar.get_width()/2, yval + 0.001, 
+                         f'{yval:.4f}', ha='center', va='bottom', fontsize=10)
 
-    print(f"绘图完成！四张图片已保存至 {results_dir} 目录下。")
+        # 保存图片
+        test_fig_path = os.path.join(results_dir, 'test_acc_bar.png')
+        fig_test.savefig(test_fig_path, dpi=300, bbox_inches='tight')
+        plt.close(fig_test)
+        print(f"Test Accuracy 柱状图已保存至 {test_fig_path}")
+    else:
+        print(f"\n未找到 {test_acc_file}，跳过柱状图绘制。")
+
+    print(f"\n所有绘图任务完成！")
 
 if __name__ == '__main__':
+    # 假设你的目录名为 ./results 或者 ./result，保持与你文件夹结构一致即可
     plot_all_results('./results')
